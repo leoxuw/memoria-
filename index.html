@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Desafío de Memoria</title>
+    <style>
+      body {
+        margin: 0;
+        background: #dedede;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100vh;
+      }
+
+      #titulo {
+        position: absolute;
+        top: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 2.5rem;
+        color: #2c3e50;
+        background-color: #ecf0f1;
+        padding: 10px 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 10;
+      }
+
+      #contador {
+        position: absolute;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 1.5rem;
+        color: #2c3e50;
+        background-color: #ffffffc7;
+        padding: 5px 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        z-index: 10;
+      }
+
+      .gameboard {
+        height: 100vh;
+        width: 100vh;
+        border-radius: 50%;
+        overflow: hidden;
+        margin-top: 150px;
+        max-height: 60vh;
+        max-width: 60vh;
+        position: relative;
+      }
+
+      .color {
+        width: 50%;
+        height: 50%;
+        display: inline-block;
+      }
+
+      .left {
+        float: left;
+      }
+
+      .right {
+        float: left;
+      }
+
+      .celeste {
+        background: #22a6b3;
+      }
+
+      .celeste.light {
+        background: #7ed6df;
+      }
+
+      .violeta {
+        background: #be2edd;
+      }
+
+      .violeta.light {
+        background: #e056fd;
+      }
+
+      .naranja {
+        background: #f0932b;
+      }
+
+      .naranja.light {
+        background: #ffbe76;
+      }
+
+      .verde {
+        background: #6ab04c;
+      }
+
+      .verde.light {
+        background: #badc58;
+      }
+
+      .btn-start {
+        cursor: pointer;
+        width: 420px;
+        height: 100px;
+        background: #ecf0f1;
+        color: #2c3e50;
+        border: none;
+        border-bottom: 4px solid #c4c6c7;
+        border-radius: 8px;
+        font-size: 3em;
+        position: absolute;
+        top: calc(50% - 50px);
+        left: calc(50% - 210px);
+        transition: 0.5s;
+        outline: none;
+      }
+
+      .btn-start:hover {
+        color: #ecf0f1;
+        background: #2c3e50;
+        border-bottom: 4px solid #1f3346;
+      }
+
+      .btn-start:active {
+        transform: scale(0.9);
+      }
+
+      .hide {
+        display: none;
+      }
+
+      * {
+        font-family: Arial;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 id="titulo">Desafío de Memoria</h1>
+    <div class="gameboard">
+      <div id="celeste" class="color celeste left" data-color="celeste"></div>
+      <div id="violeta" class="color violeta right" data-color="violeta"></div>
+      <div id="naranja" class="color naranja left" data-color="naranja"></div>
+      <div id="verde" class="color verde right" data-color="verde"></div>
+      <button id="btnEmpezar" class="btn-start" onclick="confirmarInicio()">Empezar a jugar!</button>
+    </div>
+    <div id="contador">Aciertos: 0</div>
+
+    <!-- 🎵 Audios -->
+    <audio id="musicaFondo" src="AUDIO/musica-fondo.mp3.mpeg" loop></audio>
+    <audio id="sonidoPerder" src="AUDIO/sonido-perder.mp3"></audio>
+
+    <script type="text/javascript" src="sweet.js"></script>
+
+    <script>
+      const celeste = document.getElementById("celeste");
+      const violeta = document.getElementById("violeta");
+      const naranja = document.getElementById("naranja");
+      const verde = document.getElementById("verde");
+      const btnEmpezar = document.getElementById("btnEmpezar");
+      const contador = document.getElementById("contador");
+      const ULTIMO_NIVEL = 10;
+
+      let aciertos = 0;
+      let velocidad = 1000;
+
+      class Juego {
+        constructor() {
+          this.inicializar = this.inicializar.bind(this);
+          this.inicializar();
+          this.generarSecuencia();
+          setTimeout(this.siguienteNivel, 500);
+        }
+
+        inicializar() {
+          this.elegirColor = this.elegirColor.bind(this);
+          this.siguienteNivel = this.siguienteNivel.bind(this);
+          this.toggleBtnEmpezar();
+          this.nivel = 1;
+          this.colores = { celeste, violeta, naranja, verde };
+          aciertos = 0;
+          velocidad = 1000;
+          contador.textContent = "Aciertos: 0";
+        }
+
+        toggleBtnEmpezar() {
+          btnEmpezar.classList.toggle("hide");
+        }
+
+        generarSecuencia() {
+          this.secuencia = new Array(ULTIMO_NIVEL)
+            .fill(0)
+            .map(() => Math.floor(Math.random() * 4));
+        }
+
+        siguienteNivel() {
+          this.subnivel = 0;
+          this.iluminarSecuencia();
+          this.agregarEventosClick();
+        }
+
+        transformarNumeroAColor(numero) {
+          return ["celeste", "violeta", "naranja", "verde"][numero];
+        }
+
+        transformarColorANumero(color) {
+          return { celeste: 0, violeta: 1, naranja: 2, verde: 3 }[color];
+        }
+
+        iluminarSecuencia() {
+          for (let i = 0; i < this.nivel; i++) {
+            let color = this.transformarNumeroAColor(this.secuencia[i]);
+            setTimeout(() => this.iluminarColor(color), velocidad * i);
+          }
+        }
+
+        iluminarColor(color) {
+          this.colores[color].classList.add("light");
+          setTimeout(() => this.apagarColor(color), 350);
+        }
+
+        apagarColor(color) {
+          this.colores[color].classList.remove("light");
+        }
+
+        agregarEventosClick() {
+          Object.values(this.colores).forEach(color =>
+            color.addEventListener("click", this.elegirColor)
+          );
+        }
+
+        eliminarEventosClick() {
+          Object.values(this.colores).forEach(color =>
+            color.removeEventListener("click", this.elegirColor)
+          );
+        }
+
+        elegirColor(ev) {
+          const nombreColor = ev.target.dataset.color;
+          const numeroColor = this.transformarColorANumero(nombreColor);
+          this.iluminarColor(nombreColor);
+
+          if (numeroColor === this.secuencia[this.subnivel]) {
+            this.subnivel++;
+            if (this.subnivel === this.nivel) {
+              this.nivel++;
+              aciertos++;
+              contador.textContent = `Aciertos: ${aciertos}`;
+              this.eliminarEventosClick();
+              if (aciertos === 5) {
+                swal("¡Nivel Superado!", "¡Ahora el juego será más rápido!", "success").then(() => {
+                  velocidad = 500;
+                  this.generarSecuencia();
+                  this.nivel = 1;
+                  aciertos = 0;
+                  contador.textContent = "Aciertos: 0";
+                  setTimeout(this.siguienteNivel, 1000);
+                });
+              } else {
+                setTimeout(this.siguienteNivel, 1500);
+              }
+            }
+          } else {
+            this.perdioElJuego();
+          }
+        }
+
+        perdioElJuego() {
+          document.getElementById("sonidoPerder").play();
+          swal("Desafío de Memoria", "Lo lamentamos, ¡perdiste!", "error").then(() => {
+            this.eliminarEventosClick();
+            this.inicializar();
+          });
+        }
+      }
+
+      function empezarJuego() {
+        window.juego = new Juego();
+      }
+
+      function confirmarInicio() {
+        swal({
+          title: "¿Estás listo?",
+          text: "¿Quieres empezar el juego de Leoncio Romero?",
+          icon: "info",
+          buttons: ["Cancelar", "Sí, empezar"],
+        }).then((willStart) => {
+          if (willStart) {
+            const musica = document.getElementById("musicaFondo");
+            musica.volume = 0.4;
+            musica.play();
+            empezarJuego();
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
